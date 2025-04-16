@@ -2,22 +2,25 @@ import geopandas as gpd
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def read_sirgas_dataframe(filename, epsg=4674):
-    df = pd.read_fwf(filename, skiprows=17, encoding='latin-1') #9378
-    gdf = gpd.GeoDataFrame(
-        df, 
-        geometry = gpd.points_from_xy(df['X[m]'], df['Y[m]'], df['Z[m]'], crs="EPSG:9378" )
-    )   
-    return gdf.to_crs(f"EPSG:{epsg}")
-
-if __name__ == "__main__":
-    from sirgas_downloader import sirgas_downloader
-    test_obj = sirgas_downloader()
-
-    saved_file_name = test_obj.download(test_obj.multianual_coord_url)
-    decompressed_crd_file = test_obj.decompress(saved_file_name)    
+def parse_sirgas_file(filepath, target_epsg=4674):
+    """
+    Parse SIRGAS coord file into GeoDataFrame
     
-    df = read_sirgas_dataframe(decompressed_crd_file)
-    df.plot()
-    plt.show()
-    print(df)
+    Args:
+        filepath: Path to the SIRGAS file
+        target_epsg: Target EPSG code for  transformation (default: 4674 - SIRGAS 2000)
+        
+    Returns:
+        GeoDataFrame with SIRGAS station coordinates
+    """
+    # Read fixed-width file format with specific encoding
+    data = pd.read_fwf(filepath, skiprows=17, encoding='latin-1')
+    
+    # Create spatial points from XYZ coordinates
+    spatial_data = gpd.GeoDataFrame(
+        data, 
+        geometry=gpd.points_from_xy(data['X[m]'], data['Y[m]'], data['Z[m]'], crs="EPSG:9378")
+    )
+    
+    # Transform to target coordinate system
+    return spatial_data.to_crs(f"EPSG:{target_epsg}")
